@@ -8,19 +8,12 @@ from random import gauss
 path = '/home/valentina/Github/AI/FIS/dataset_2.txt'
 
 #### import data ####
-with open(path) as f:
-    data = np.loadtxt(f, dtype='int', comments="#", skiprows=1, usecols=None)
-
-data = np.ravel(data)
+# with open(path) as f:
+#     data = np.loadtxt(f, dtype='int', comments="#", usecols=None)
 
 #### histogram of the dataset ####
+# data = np.ravel(data)
 # n, bins, patches = plt.hist(data, facecolor='purple')
-# plt.show()
-
-#### time series figure ####
-# fig, ax = plt.subplots()
-# ax.plot(data[70:], '-o', ms=5, lw=1, mfc='purple')
-# plt.yticks([2, 4, 5, 8, 11])
 # plt.show()
 
 #### Antecedent/Consequent objects ####
@@ -204,23 +197,7 @@ def compute_AI(a, v, show=False):
 
     return resulting_angle, resulting_intensity
 
-def numbers_to_AV(num, emo_set='emo'):
-    emo = {
-        0: [-3, 4, 'Neutral'],
-        1: [2, -3.5, 'Anger'],
-        2: [-3, -5, 'Disgust'],
-        3: [4, 4.5, 'Fear'],
-        4: [1.7, 4.8, 'Joy, Happiness'],
-        5: [-3.5, -2.5, 'Sadness'],
-        6: [5, 1.7, 'Surprise'],
-        7: [4.6, -4, 'Scream'],
-        8: [-4.5, -1, 'Boredom'],
-        9: [-4.5, -0.5, 'Sleepy'],
-        10: [0, 0, 'Unknown'],
-        11: [4.2, 4.2, 'Amusement'],
-        12: [2.5, -4.3, 'Anxiety'],
-    }
-
+def numbers_to_AV(num):
     susana = {
         0: [4.7, -2.2, 'Calm'],
         1: [3.5, -4.5, 'Anger'],
@@ -236,59 +213,74 @@ def numbers_to_AV(num, emo_set='emo'):
         11: [1.3, 4.9, 'Excitement'],
         12: [-2.7, 4.3, 'Frustration'],
     }
-    if emo_set == 'emo':
-        ls = emo.get(num, "nothing")
-    else:
-        ls = susana.get(num, "nothing")
-    return ls
-# print(numbers_to_AV(8, 'susana'))
+
+    return susana.get(num, "nothing")
 
 #### data mapping ####
-data_a = []
-data_v = []
-with open(path) as f:
-    for emo in f:
-        av = numbers_to_AV(int(emo))
-        a = gauss(av[0], 0.25)
-        v = gauss(av[1], 0.25)
 
-        if not -5 < a < 5:
-            if abs(-5-a) < abs(5-a):
-                a = -5
-            else:
-                a = 5
+def preprocess(path):
+    data_a = []
+    data_v = []
 
-        if not -5 < v < 5:
-            if abs(-5-v) < abs(5-v):
-                v = -5
-            else:
-                v = 5
+    with open(path) as f:
+        for emo in f:
+            av = numbers_to_AV(int(emo))
+            a = gauss(av[0], 0.15)
+            v = gauss(av[1], 0.15)
 
-        data_a.append(a)
-        data_v.append(v)
+            if not -5 < a < 5:
+                if abs(-5-a) < abs(5-a):
+                    a = -5
+                else:
+                    a = 5
+
+            if not -5 < v < 5:
+                if abs(-5-v) < abs(5-v):
+                    v = -5
+                else:
+                    v = 5
+
+            data_a.append(a)
+            data_v.append(v)
+
+    return data_a, data_v
 
 #### dataset in AV-space figure ####
-# circle = plt.Circle((0, 0), 6.2, fill=False)
+# import pylab as lab
+#
+# data_a, data_v = preprocess(path)
+#
+# circle = plt.Circle((0, 0), 6.5, fill=False)
 # ax = plt.gca()
 # ax.cla()
 #
-# ax.set_xlim((-7, 7))
-# ax.set_ylim((-7, 7))
-# lf,rt = ax.get_xlim()
-# down,up = ax.get_ylim()
+# ax.set_xlim((-8, 8))
+# ax.set_ylim((-8, 8))
 #
 # ax.plot(data_a, data_v, 'o', color='purple')
 # ax.add_artist(circle)
-# lab.arrow(lf, 0, rt-lf, 0, length_includes_head = True, head_width = 0.15)
-# lab.arrow(0, down, 0, up-down, length_includes_head = True, head_width = 0.15)
+#
+# left,right = ax.get_xlim()
+# low,high = ax.get_ylim()
+# lab.arrow(left, 0, right -left, 0, length_includes_head = True, head_width = 0.3)
+# lab.arrow(0, low, 0, high-low, length_includes_head = True, head_width = 0.3)
+#
 # plt.axis('off')
+#
 # plt.show()
 
 #### computation of angle and intensity means ####
+data_a, data_v = preprocess(path)
 a_list = []
 i_list = []
-for a,v in zip(data_a,data_v):
-    a_list.append(compute_AI(a, v)[0])
-    i_list.append(compute_AI(a, v)[1])
+
+for a,v in zip(data_a, data_v):
+    try:
+        r = compute_AI(a, v)
+        a_list.append(r[0])
+        i_list.append(r[1])
+    except:
+        print('error adding:', r)
+
 print('Mean angle:     ', str(np.mean(a_list)))
 print('Mean intensity: ', str(np.mean(i_list)))
